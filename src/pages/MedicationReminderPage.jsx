@@ -39,12 +39,20 @@ export default function MedicationReminderPage() {
     return () => clearInterval(interval);
   }, [reminders, play, alarmEnabled, dueReminder]);
 
+  // const handleEnableAlarm = () => {
+  //   initiateSound();
+  //   setAlarmEnabled(true);
+  //   setStatusMessage("Alarm system activated!");
+  //   setTimeout(() => setStatusMessage(""), 3000);
+  // };
+
   const handleEnableAlarm = () => {
-    initiateSound();
+  initiateSound().then(() => {
     setAlarmEnabled(true);
     setStatusMessage("Alarm system activated!");
     setTimeout(() => setStatusMessage(""), 3000);
-  };
+  });
+};
 
   const handlePopupOk = () => {
     const now = new Date();
