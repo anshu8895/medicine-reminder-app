@@ -42,6 +42,7 @@ function ReminderItem({ reminder, onDelete, onEdit, onMarkTaken }) {
         <span style={{ color: "green", fontWeight: "bold", marginLeft: "10px" }}>
           Completed
         </span>
+        <button onClick={() => onDelete(reminder.id)}>Delete</button>
       </li>
     );
   }
