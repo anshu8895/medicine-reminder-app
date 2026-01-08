@@ -13,6 +13,7 @@ export default function MedicationReminderPage() {
   const [statusMessage, setStatusMessage] = useState("");
   const [snoozeMinutes, setSnoozeMinutes] = useState(5); // Default to 5 mins
   const [snoozedUntil, setSnoozedUntil] = useState(null);
+  const [snoozedItemId, setSnoozedItemId] = useState([]);
 
   // useRef tracks the last dismissed time to prevent the alarm 
   // from re-triggering within the same minute.
@@ -40,9 +41,8 @@ export default function MedicationReminderPage() {
 
         // If it's a snooze, we might not have the 'originalDue' object handy, 
         // so we find it or use a fallback name.
-        const reminderToDisplay = originalDue || reminders.find(r => 
-          r.medicineTime === reminders.find(rem => 
-            rem.medicineName === dueReminder?.medicineName)?.medicineTime) || { medicineName: "Snoozed Medicine" };
+        const reminderToDisplay = originalDue ||
+          reminders.find(r => snoozedItemId.includes(r.id));
 
         setDueReminder(reminderToDisplay);
         setSnoozedUntil(null);
@@ -52,15 +52,7 @@ export default function MedicationReminderPage() {
 
     const interval = setInterval(checkReminders, 1000);
     return () => clearInterval(interval);
-  }, [reminders, alarmEnabled, dueReminder, snoozedUntil, play]);
-
-
-  // const handleEnableAlarm = () => {
-  //   initiateSound();
-  //   setAlarmEnabled(true);
-  //   setStatusMessage("Alarm system activated!");
-  //   setTimeout(() => setStatusMessage(""), 3000);
-  // };
+  }, [reminders, alarmEnabled, dueReminder, snoozedUntil, snoozedItemId, play]);
 
   const handleEnableAlarm = () => {
     initiateSound().then(() => {
@@ -70,57 +62,53 @@ export default function MedicationReminderPage() {
     });
   };
 
-  // Increase snooze time
+  // Snooze time
   const increaseSnooze = () => setSnoozeMinutes(prev => prev + 5);
-
-  // Decrease snooze time (don't go below 0)
   const decreaseSnooze = () => setSnoozeMinutes(prev => (prev > 0 ? prev - 5 : 0));
 
   const handleSnooze = () => {
     if (!dueReminder || snoozeMinutes === 0) return;
+    const currentId = dueReminder.id;
 
+    setSnoozedItemId(prev => Array.isArray(prev) ? [...new Set([...prev, currentId])] : [currentId]);
     const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5);
-
-    // Prevent the original minute from re-triggering immediately
-    lastDismissedTime.current = currentTime;
+    lastDismissedTime.current = now.toTimeString().slice(0, 5);
 
     now.setMinutes(now.getMinutes() + snoozeMinutes);
-    const snoozeTimeString = now.toTimeString().slice(0, 5); // e.g. "14:20"
+    setSnoozedUntil(now.toTimeString().slice(0, 5));
 
     stop();
-    setSnoozedUntil(snoozeTimeString);
     setDueReminder(null);
     setSnoozeMinutes(5);
   };
 
 
   const handlePopupOk = () => {
-    const now = new Date();
+    if (!dueReminder) return;
+
+    const currentId = dueReminder.id;
+    setSnoozedItemId(prev => (Array.isArray(prev) ? prev.filter(id => id !== currentId) : []));
+
     // Record the minute this was dismissed
-    lastDismissedTime.current = now.toTimeString().slice(0, 5);
+    lastDismissedTime.current = new Date().toTimeString().slice(0, 5);
 
     stop();
     setDueReminder(null);
     markAsTaken(dueReminder.id);
   };
 
-  const todayReminders = reminders.filter(
-    r => r.date === today && r.taken === false
-  );
+  const todayReminders = reminders.filter(r => r.date === today && r.taken === false);
+  const historyReminders = reminders.filter(r => r.date !== today || r.taken === true);
 
-  const historyReminders = reminders.filter(
-    r => r.date !== today || r.taken === true
-  );
-
+  // calculation for overall adherence
   const totalCount = reminders.length;
   const takenCount = reminders.filter(r => r.taken).length;
   const totalAdherence = totalCount === 0 ? 0 : Math.round((takenCount / totalCount) * 100);
 
+  // calculation for today's adherence
   const todaysTotal = reminders.filter(r => r.date === today).length;
   const todaysTaken = reminders.filter(r => r.date === today && r.taken).length;
   const todayAdherence = todaysTotal === 0 ? 0 : Math.round((todaysTaken / todaysTotal) * 100);
-
 
   return (
     <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
@@ -139,6 +127,8 @@ export default function MedicationReminderPage() {
         reminders={todayReminders}
         onDelete={deleteReminder}
         onEdit={editReminder}
+        markAsTaken={markAsTaken}
+        snoozedItemId={snoozedItemId}
       />
 
       <h3>History</h3>
@@ -189,9 +179,9 @@ export default function MedicationReminderPage() {
               {/* Plus Button */}
               <button onClick={increaseSnooze} className="circleButtonStyle"> + </button>
             </div>
-              <button onClick={handlePopupOk} className="okButtonStyle">
-                I've taken it
-              </button>
+            <button onClick={handlePopupOk} className="okButtonStyle">
+              I've taken it
+            </button>
 
           </div>
         </div>

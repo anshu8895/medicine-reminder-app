@@ -1,9 +1,13 @@
+
 body {
   margin: 0;
   padding: 0;
   display: flex;
   justify-content: center;
-  background-color: rgb(84, 136, 138);
+  background-image: url('/src/assets/bgimage.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: fixed;
 }
 
 .app-container {
@@ -85,6 +89,14 @@ li button.edit:hover {
 
 li button:hover {
   background: #d63d3d;
+}
+
+.takenBtn{
+  background-color: grey;
+}
+
+.takenBtn:hover{
+  background-color: rgb(93, 91, 91);
 }
 
 .circleButtonStyle {

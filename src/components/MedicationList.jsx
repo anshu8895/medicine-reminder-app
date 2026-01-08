@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function MedicationList({ reminders, onDelete, onEdit, onMarkTaken }) {
+export default function MedicationList({ reminders, onDelete, onEdit, markAsTaken, snoozedItemId }) {
   if (reminders.length === 0) return <p>No reminders yet.</p>;
 
   return (
@@ -11,7 +11,8 @@ export default function MedicationList({ reminders, onDelete, onEdit, onMarkTake
           reminder={r}
           onDelete={onDelete}
           onEdit={onEdit}
-          onMarkTaken={onMarkTaken}
+          markAsTaken={markAsTaken}
+          isSnoozed={snoozedItemId?.includes(r.id)}
         />
       ))}
     </ul>
@@ -22,7 +23,7 @@ function formatIndianDate(dateString) {
   return new Date(dateString).toLocaleDateString("en-IN");
 }
 
-function ReminderItem({ reminder, onDelete, onEdit, onMarkTaken }) {
+function ReminderItem({ reminder, onDelete, onEdit, markAsTaken, isSnoozed }) {
   const [isEditing, setIsEditing] = useState(false);
   const [medicineName, setMedicineName] = useState(reminder.medicineName);
   const [medicineTime, setMedicineTime] = useState(reminder.medicineTime);
@@ -60,10 +61,13 @@ function ReminderItem({ reminder, onDelete, onEdit, onMarkTaken }) {
         </>
       ) : (
         <>
-          <strong>{reminder.medicineName}</strong> at {reminder.medicineTime}
+          <strong>{reminder.medicineName}</strong>
+          {isSnoozed && <span style={{ marginLeft: "8px" }} title="Snooze Active">🔔</span>}
+          <span> at {reminder.medicineTime}</span>
+
           <div style={{ display: "flex", gap: "6px" }}>
-            {onMarkTaken && (
-              <button onClick={() => onMarkTaken(reminder.id)}>
+            {markAsTaken && (
+              <button className="takenBtn" onClick={() => markAsTaken(reminder.id)}>
                 Mark as Taken
               </button>
             )}
