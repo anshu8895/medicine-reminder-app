@@ -1,11 +1,12 @@
 import { useRef } from "react";
+import interstellarAudio from "../assets/interstellar.mp3";
 
 export default function useAlarmSound() {
     const audioRef = useRef(null);
 
     function initiateSound() {
         if (!audioRef.current) {
-            audioRef.current = new Audio("/public/interstellar.mp3");
+            audioRef.current = new Audio(interstellarAudio);
             audioRef.current.loop = true;
             audioRef.current.volume = 1;
         }
