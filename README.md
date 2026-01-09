@@ -79,11 +79,14 @@ npm start
 ---
 
 ## 📸 Screenshots
+<img width="1280" height="717" alt="Screenshot 2026-01-09 at 9 14 12 AM" src="https://github.com/user-attachments/assets/6afca12e-30ac-45a0-bd9d-e69c9d3cae9d" />
+<img width="714" height="717" alt="Screenshot 2026-01-09 at 9 16 40 AM" src="https://github.com/user-attachments/assets/7cc7189b-3909-43d0-81aa-cfe8fa8a4f91" />
+<img width="714" height="717" alt="Screenshot 2026-01-09 at 9 15 00 AM" src="https://github.com/user-attachments/assets/c95a314d-88ab-4e9c-8337-dcabac31c586" />
 
-Add screenshots of:
+Screenshots of:
 - Today vs History view
 - Adherence percentage UI
-- Alarm popup (optional)
+- Alarm popup
 
 ---
 
