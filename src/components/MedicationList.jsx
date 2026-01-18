@@ -36,14 +36,14 @@ function ReminderItem({ reminder, onDelete, onEdit, markAsTaken, isSnoozed }) {
   if (reminder.taken) {
     return (
       <li>
-        <strong>{reminder.medicineName}</strong>
         <div style={{ fontSize: "0.9rem", color: "#555" }}>
+        <strong>{reminder.medicineName} </strong>
           {formatIndianDate(reminder.date)} at {reminder.medicineTime}
         </div>
         <span style={{ color: "green", fontWeight: "bold", marginLeft: "10px" }}>
           Completed
         </span>
-        <button onClick={() => onDelete(reminder.id)}>Delete</button>
+        <button onClick={() => onDelete(reminder.id)}>Delete</button>        
       </li>
     );
   }
@@ -61,9 +61,11 @@ function ReminderItem({ reminder, onDelete, onEdit, markAsTaken, isSnoozed }) {
         </>
       ) : (
         <>
-          <strong>{reminder.medicineName}</strong>
-          {isSnoozed && <span style={{ marginLeft: "8px" }} title="Snooze Active">🔔</span>}
-          <span> at {reminder.medicineTime}</span>
+          <div>
+            <strong>{reminder.medicineName}</strong>
+            {isSnoozed && <span style={{ marginLeft: "8px" }} title="Snooze Active">🔔</span>}
+            <span> at {reminder.medicineTime}</span>
+          </div>
 
           <div style={{ display: "flex", gap: "6px" }}>
             {markAsTaken && (

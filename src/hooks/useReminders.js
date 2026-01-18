@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 export default function useReminders() {
     const today = new Date().toISOString().slice(0, 10);
 
-
-
     // load saved Reminders
     const [reminders, setReminders] = useState(() => {
         const saved = localStorage.getItem('med_reminders');

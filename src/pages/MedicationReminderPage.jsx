@@ -8,7 +8,7 @@ export default function MedicationReminderPage() {
   const { play, stop, initiateSound } = useAlarmSound();
   const { reminders, addReminder, markAsTaken, editReminder, deleteReminder } = useReminders();
 
-  const [dueReminder, setDueReminder] = useState(null);
+  const [currReminder, setCurrReminder] = useState(null);
   const [alarmEnabled, setAlarmEnabled] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [snoozeMinutes, setSnoozeMinutes] = useState(5); // Default to 5 mins
@@ -37,14 +37,14 @@ export default function MedicationReminderPage() {
       const isSnoozeDue = snoozedUntil === currentTime;
 
       // 4. Trigger if either is true, provided an alarm isn't already showing
-      if ((originalDue || isSnoozeDue) && !dueReminder) {
+      if ((originalDue || isSnoozeDue) && !currReminder) {
 
         // If it's a snooze, we might not have the 'originalDue' object handy, 
         // so we find it or use a fallback name.
         const reminderToDisplay = originalDue ||
           reminders.find(r => snoozedItemId.includes(r.id));
 
-        setDueReminder(reminderToDisplay);
+        setCurrReminder(reminderToDisplay);
         setSnoozedUntil(null);
         play();
       }
@@ -52,7 +52,8 @@ export default function MedicationReminderPage() {
 
     const interval = setInterval(checkReminders, 1000);
     return () => clearInterval(interval);
-  }, [reminders, alarmEnabled, dueReminder, snoozedUntil, snoozedItemId, play]);
+
+  }, [reminders, alarmEnabled, currReminder, snoozedUntil, snoozedItemId, play]);
 
   const handleEnableAlarm = () => {
     initiateSound().then(() => {
@@ -67,34 +68,32 @@ export default function MedicationReminderPage() {
   const decreaseSnooze = () => setSnoozeMinutes(prev => (prev > 0 ? prev - 5 : 0));
 
   const handleSnooze = () => {
-    if (!dueReminder || snoozeMinutes === 0) return;
-    const currentId = dueReminder.id;
+    if (!currReminder || snoozeMinutes === 0) return;
 
-    setSnoozedItemId(prev => Array.isArray(prev) ? [...new Set([...prev, currentId])] : [currentId]);
+    setSnoozedItemId(prev => Array.isArray(prev) ? [...new Set([...prev, currReminder.id])] : [currReminder.id]);
     const now = new Date();
     lastDismissedTime.current = now.toTimeString().slice(0, 5);
 
     now.setMinutes(now.getMinutes() + snoozeMinutes);
     setSnoozedUntil(now.toTimeString().slice(0, 5));
-
+    
     stop();
-    setDueReminder(null);
+    setCurrReminder(null);
     setSnoozeMinutes(5);
   };
 
 
   const handlePopupOk = () => {
-    if (!dueReminder) return;
+    if (!currReminder) return;
 
-    const currentId = dueReminder.id;
-    setSnoozedItemId(prev => (Array.isArray(prev) ? prev.filter(id => id !== currentId) : []));
+    setSnoozedItemId(prev => (Array.isArray(prev) ? prev.filter(id => id !== currReminder.id) : []));
 
     // Record the minute this was dismissed
     lastDismissedTime.current = new Date().toTimeString().slice(0, 5);
 
     stop();
-    setDueReminder(null);
-    markAsTaken(dueReminder.id);
+    setCurrReminder(null);
+    markAsTaken(currReminder.id);
   };
 
   const todayReminders = reminders.filter(r => r.date === today && r.taken === false);
@@ -150,13 +149,13 @@ export default function MedicationReminderPage() {
         {/* <button onClick={stop} style={{ padding: "10px" }}>Stop Alarm</button> */}
       </div>
 
-      {/* Due Reminder Popup */}
-      {dueReminder && (
+      {/* current Reminder Popup */}
+      {currReminder && (
         <div className="popupOverlayStyle">
           <div className="popupInnerStyle">
             <h2 style={{ fontSize: "2rem" }}>⏰</h2>
             <h3>Time to take your medicine!</h3>
-            <p style={{ fontSize: "1.2rem" }}><b>{dueReminder.medicineName}</b></p>
+            <p style={{ fontSize: "1.2rem" }}><b>{currReminder.medicineName}</b></p>
             <div style={{
               display: "flex",
               alignItems: "center",
