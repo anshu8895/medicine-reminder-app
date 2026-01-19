@@ -6,17 +6,24 @@ import { useEffect, useState, useRef } from "react";
 
 export default function MedicationReminderPage() {
   const { play, stop, initiateSound } = useAlarmSound();
-  const { reminders, addReminder, markAsTaken, editReminder, deleteReminder } = useReminders();
+
+  // Destructure the new snooze properties from the hook
+  const {
+    reminders,
+    snoozedItemIds,
+    clearSnooze,
+    addReminder,
+    markAsTaken,
+    editReminder,
+    deleteReminder,
+    snoozeReminder
+  } = useReminders();
 
   const [currReminder, setCurrReminder] = useState(null);
   const [alarmEnabled, setAlarmEnabled] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
-  const [snoozeMinutes, setSnoozeMinutes] = useState(5); // Default to 5 mins
-  const [snoozedUntil, setSnoozedUntil] = useState(null);
-  const [snoozedItemId, setSnoozedItemId] = useState([]);
+  const [snoozeMinutes, setSnoozeMinutes] = useState(5);
 
-  // useRef tracks the last dismissed time to prevent the alarm 
-  // from re-triggering within the same minute.
   const lastDismissedTime = useRef(null);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -25,100 +32,81 @@ export default function MedicationReminderPage() {
 
     const checkReminders = () => {
       const now = new Date();
-      const currentTime = now.toTimeString().slice(0, 5); // "HH:MM"
+      const currentTime = now.toTimeString().slice(0, 5);
 
-      // 1. Safety Guard: Don't trigger if we just dismissed this exact minute
       if (lastDismissedTime.current === currentTime) return;
 
-      // 2. Check original reminders
-      const originalDue = reminders.find(r => r.medicineTime === currentTime);
+      const originalDue = reminders.find(r =>
+        r.medicineTime === currentTime &&
+        !r.taken &&
+        !snoozedItemIds.some(s => s.id === r.id)
+      );
 
-      // 3. Check if the current time matches our Snooze target
-      const isSnoozeDue = snoozedUntil === currentTime;
+      const snoozedMatch = snoozedItemIds.find(s => s.time === currentTime);
 
-      // 4. Trigger if either is true, provided an alarm isn't already showing
-      if ((originalDue || isSnoozeDue) && !currReminder) {
+      if ((originalDue || snoozedMatch) && !currReminder) {
+        const targetId = originalDue ? originalDue.id : snoozedMatch.id;
+        const reminderToDisplay = reminders.find(r => r.id === targetId);
 
-        // If it's a snooze, we might not have the 'originalDue' object handy, 
-        // so we find it or use a fallback name.
-        const reminderToDisplay = originalDue ||
-          reminders.find(r => snoozedItemId.includes(r.id));
-
-        setCurrReminder(reminderToDisplay);
-        setSnoozedUntil(null);
-        play();
+        if (reminderToDisplay) {
+          setCurrReminder(reminderToDisplay);
+          clearSnooze(targetId);
+          play();
+        }
       }
     };
 
     const interval = setInterval(checkReminders, 1000);
     return () => clearInterval(interval);
 
-  }, [reminders, alarmEnabled, currReminder, snoozedUntil, snoozedItemId, play]);
+  }, [reminders, alarmEnabled, currReminder, clearSnooze, snoozedItemIds, play]);
 
   const handleEnableAlarm = () => {
     initiateSound().then(() => {
       setAlarmEnabled(true);
       setStatusMessage("Alarm system activated!");
-      setTimeout(() => setStatusMessage(""), 3000);
+      setTimeout(() => setStatusMessage(""), 2000);
     });
   };
-
-  // Snooze time
-  const increaseSnooze = () => setSnoozeMinutes(prev => prev + 5);
-  const decreaseSnooze = () => setSnoozeMinutes(prev => (prev > 0 ? prev - 5 : 0));
 
   const handleSnooze = () => {
     if (!currReminder || snoozeMinutes === 0) return;
 
-    setSnoozedItemId(prev => Array.isArray(prev) ? [...new Set([...prev, currReminder.id])] : [currReminder.id]);
-    const now = new Date();
-    lastDismissedTime.current = now.toTimeString().slice(0, 5);
+    // Call the snooze logic from our custom hook
+    snoozeReminder(currReminder.id, snoozeMinutes);
 
-    now.setMinutes(now.getMinutes() + snoozeMinutes);
-    setSnoozedUntil(now.toTimeString().slice(0, 5));
-    
+    lastDismissedTime.current = new Date().toTimeString().slice(0, 5);
     stop();
     setCurrReminder(null);
     setSnoozeMinutes(5);
   };
 
-
   const handlePopupOk = () => {
     if (!currReminder) return;
-
-    setSnoozedItemId(prev => (Array.isArray(prev) ? prev.filter(id => id !== currReminder.id) : []));
-
-    // Record the minute this was dismissed
     lastDismissedTime.current = new Date().toTimeString().slice(0, 5);
-
     stop();
     setCurrReminder(null);
-    markAsTaken(currReminder.id);
+    markAsTaken(currReminder.id); 
   };
 
-  const todayReminders = reminders.filter(r => r.date === today && r.taken === false);
-  const historyReminders = reminders.filter(r => r.date !== today || r.taken === true);
+  // Adherence Calculations (same as before)
+  const todayReminders = reminders.filter(r => r.date === today && !r.taken);
+  const historyReminders = reminders.filter(r => r.date !== today || r.taken);
 
-  // calculation for overall adherence
+  // --- CALCULATIONS FOR OVERALL ADHERENCE ---
   const totalCount = reminders.length;
   const takenCount = reminders.filter(r => r.taken).length;
   const totalAdherence = totalCount === 0 ? 0 : Math.round((takenCount / totalCount) * 100);
 
-  // calculation for today's adherence
+  // --- CALCULATIONS FOR TODAY'S ADHERENCE ---
   const todaysTotal = reminders.filter(r => r.date === today).length;
   const todaysTaken = reminders.filter(r => r.date === today && r.taken).length;
   const todayAdherence = todaysTotal === 0 ? 0 : Math.round((todaysTaken / todaysTotal) * 100);
-
   return (
     <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
       <h2>Medication Reminders</h2>
-
-      {statusMessage && (
-        <div style={{ color: "green", marginBottom: "10px" }}>{statusMessage}</div>
-      )}
-
+      {statusMessage && <div style={{ color: "green", marginBottom: "10px" }}>{statusMessage}</div>}
       <MedicationForm AddToList={addReminder} />
-
       <p><strong>Today’s Adherence:</strong> {todayAdherence}%</p>
 
       <h3>Today</h3>
@@ -127,7 +115,7 @@ export default function MedicationReminderPage() {
         onDelete={deleteReminder}
         onEdit={editReminder}
         markAsTaken={markAsTaken}
-        snoozedItemId={snoozedItemId}
+        snoozedItemIds={snoozedItemIds}
       />
 
       <h3>History</h3>
@@ -135,53 +123,27 @@ export default function MedicationReminderPage() {
         reminders={historyReminders}
         onDelete={deleteReminder}
       />
-
       <p><strong>Overall Adherence:</strong> {totalAdherence}%</p>
 
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-        <button
-          onClick={handleEnableAlarm}
-          disabled={alarmEnabled}
-          style={{ backgroundColor: alarmEnabled ? "#ccc" : "#4CAF50", color: "white", padding: "10px" }}
-        >
+      <div style={{ marginTop: "20px" }}>
+        <button onClick={handleEnableAlarm} disabled={alarmEnabled}
+          style={{ backgroundColor: alarmEnabled ? "#ccc" : "#4CAF50", color: "white", padding: "10px" }}>
           {alarmEnabled ? "Alarm Active" : "Enable Alarm Sound"}
         </button>
-        {/* <button onClick={stop} style={{ padding: "10px" }}>Stop Alarm</button> */}
       </div>
 
-      {/* current Reminder Popup */}
       {currReminder && (
         <div className="popupOverlayStyle">
           <div className="popupInnerStyle">
             <h2 style={{ fontSize: "2rem" }}>⏰</h2>
             <h3>Time to take your medicine!</h3>
-            <p style={{ fontSize: "1.2rem" }}><b>{currReminder.medicineName}</b></p>
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "15px",
-              margin: "20px 0"
-            }}>
-              {/* Minus Button */}
-              <button
-                onClick={decreaseSnooze}
-                className="circleButtonStyle"
-                disabled={snoozeMinutes <= 0}
-              > - </button>
-
-              {/* Dynamic Snooze Button */}
-              <button onClick={handleSnooze} className="snoozeButtonStyle">
-                Snooze for {snoozeMinutes} mins
-              </button>
-
-              {/* Plus Button */}
-              <button onClick={increaseSnooze} className="circleButtonStyle"> + </button>
+            <p><b>{currReminder.medicineName}</b></p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "15px", margin: "20px 0" }}>
+              <button onClick={() => setSnoozeMinutes(m => m > 0 ? m - 5 : 0)} className="circleButtonStyle">-</button>
+              <button onClick={handleSnooze} className="snoozeButtonStyle">Snooze for {snoozeMinutes} mins</button>
+              <button onClick={() => setSnoozeMinutes(m => m + 5)} className="circleButtonStyle">+</button>
             </div>
-            <button onClick={handlePopupOk} className="okButtonStyle">
-              I've taken it
-            </button>
-
+            <button onClick={handlePopupOk} className="okButtonStyle">I've taken it</button>
           </div>
         </div>
       )}

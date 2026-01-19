@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function MedicationList({ reminders, onDelete, onEdit, markAsTaken, snoozedItemId }) {
+export default function MedicationList({ reminders, onDelete, onEdit, markAsTaken, snoozedItemIds }) {
   if (reminders.length === 0) return <p>No reminders yet.</p>;
 
   return (
@@ -12,7 +12,7 @@ export default function MedicationList({ reminders, onDelete, onEdit, markAsTake
           onDelete={onDelete}
           onEdit={onEdit}
           markAsTaken={markAsTaken}
-          isSnoozed={snoozedItemId?.includes(r.id)}
+          isSnoozed={snoozedItemIds?.some(s => s.id === r.id)}
         />
       ))}
     </ul>
