@@ -7,7 +7,10 @@ export default function MedicationForm({ AddToList }) {
 
     function handleSubmit(e) {
         e.preventDefault();
-        if (!medicineName.trim() || !medicineTime) return;
+        if (!medicineName.trim() || !medicineTime) {
+            alert('Please enter a valid medicine name and time!')
+            return;
+        }
 
         AddToList({ medicineName, medicineTime });
         setMedicineName('');

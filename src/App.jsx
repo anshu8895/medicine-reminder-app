@@ -1,4 +1,4 @@
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, NavLink } from "react-router-dom";
 import MedicationReminderPage from "./pages/MedicationReminderPage";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
@@ -9,10 +9,16 @@ export default function App() {
   return (
     <div className="app-container">
 
-      <nav style={{ display: "flex", justifyContent: "center", gap: "20px", marginBottom: "20px" }}>
-        <Link to="/">Home</Link>
-        <Link to="/reminders">Medication Reminders</Link>
-        <Link to="/about">About</Link>
+      <nav className="nav">
+        <NavLink to="/" end className="nav-link">
+          Home
+        </NavLink>
+        <NavLink to="/reminders" className="nav-link">
+          Medication Reminders
+        </NavLink>
+        <NavLink to="/about" className="nav-link">
+          About
+        </NavLink>
       </nav>
 
       <Routes>

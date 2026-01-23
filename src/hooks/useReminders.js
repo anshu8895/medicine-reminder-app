@@ -15,6 +15,20 @@ export default function useReminders() {
         return saved ? JSON.parse(saved) : [];
     });
 
+    // Adherence calculation
+    const totalCount = reminders.length;
+    const takenCount = reminders.filter(r => r.taken).length;
+
+    const totalAdherence =
+        totalCount === 0 ? 0 : Math.round((takenCount / totalCount) * 100);
+
+    const todaysTotal = reminders.filter(r => r.date === today).length;
+    const todaysTaken = reminders.filter(r => r.date === today && r.taken).length;
+
+    const todayAdherence =
+        todaysTotal === 0 ? 0 : Math.round((todaysTaken / todaysTotal) * 100);
+
+
     // Sync Reminders to LocalStorage
     useEffect(() => {
         localStorage.setItem('med_reminders', JSON.stringify(reminders));
@@ -59,7 +73,7 @@ export default function useReminders() {
         setSnoozedItemIds(prev => {
             const otherSnoozes = Array.isArray(prev) ? prev.filter(item => item.id !== id) : [];
             const reminder = reminders.find(r => r.id === id);
-            return [...otherSnoozes, { id, time: snoozeTime, medicineName:reminder.medicineName }];
+            return [...otherSnoozes, { id, time: snoozeTime, medicineName: reminder.medicineName }];
         });
     }
 
@@ -72,11 +86,13 @@ export default function useReminders() {
     return {
         reminders,
         snoozedItemIds,
+        todayAdherence,
+        totalAdherence,
         addReminder,
         markAsTaken,
         editReminder,
         deleteReminder,
         snoozeReminder,
-        clearSnooze 
+        clearSnooze
     };
 }

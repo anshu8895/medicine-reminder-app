@@ -7,10 +7,11 @@ import { useEffect, useState, useRef } from "react";
 export default function MedicationReminderPage() {
   const { play, stop, initiateSound } = useAlarmSound();
 
-  // Destructure the new snooze properties from the hook
   const {
     reminders,
     snoozedItemIds,
+    todayAdherence,
+    totalAdherence,
     clearSnooze,
     addReminder,
     markAsTaken,
@@ -21,11 +22,14 @@ export default function MedicationReminderPage() {
 
   const [currReminder, setCurrReminder] = useState(null);
   const [alarmEnabled, setAlarmEnabled] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
+  const [alarmStatusMessage, setAlarmStatusMessage] = useState("");
   const [snoozeMinutes, setSnoozeMinutes] = useState(5);
 
   const lastDismissedTime = useRef(null);
   const today = new Date().toISOString().slice(0, 10);
+  const todayReminders = reminders.filter(r => r.date === today && !r.taken);
+  const historyReminders = reminders.filter(r => r.date !== today || r.taken);
+
 
   useEffect(() => {
     if (!alarmEnabled) return;
@@ -64,8 +68,8 @@ export default function MedicationReminderPage() {
   const handleEnableAlarm = () => {
     initiateSound().then(() => {
       setAlarmEnabled(true);
-      setStatusMessage("Alarm system activated!");
-      setTimeout(() => setStatusMessage(""), 2000);
+      setAlarmStatusMessage("Alarm sound activated!");
+      setTimeout(() => setAlarmStatusMessage(""), 2000);
     });
   };
 
@@ -86,26 +90,12 @@ export default function MedicationReminderPage() {
     lastDismissedTime.current = new Date().toTimeString().slice(0, 5);
     stop();
     setCurrReminder(null);
-    markAsTaken(currReminder.id); 
+    markAsTaken(currReminder.id);
   };
 
-  // Adherence Calculations (same as before)
-  const todayReminders = reminders.filter(r => r.date === today && !r.taken);
-  const historyReminders = reminders.filter(r => r.date !== today || r.taken);
-
-  // --- CALCULATIONS FOR OVERALL ADHERENCE ---
-  const totalCount = reminders.length;
-  const takenCount = reminders.filter(r => r.taken).length;
-  const totalAdherence = totalCount === 0 ? 0 : Math.round((takenCount / totalCount) * 100);
-
-  // --- CALCULATIONS FOR TODAY'S ADHERENCE ---
-  const todaysTotal = reminders.filter(r => r.date === today).length;
-  const todaysTaken = reminders.filter(r => r.date === today && r.taken).length;
-  const todayAdherence = todaysTotal === 0 ? 0 : Math.round((todaysTaken / todaysTotal) * 100);
   return (
     <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
       <h2>Medication Reminders</h2>
-      {statusMessage && <div style={{ color: "green", marginBottom: "10px" }}>{statusMessage}</div>}
       <MedicationForm AddToList={addReminder} />
       <p><strong>Today’s Adherence:</strong> {todayAdherence}%</p>
 
@@ -126,11 +116,17 @@ export default function MedicationReminderPage() {
       <p><strong>Overall Adherence:</strong> {totalAdherence}%</p>
 
       <div style={{ marginTop: "20px" }}>
-        <button onClick={handleEnableAlarm} disabled={alarmEnabled}
-          style={{ backgroundColor: alarmEnabled ? "#ccc" : "#4CAF50", color: "white", padding: "10px" }}>
+        <button onClick={handleEnableAlarm} disabled={alarmEnabled} className={`alarm-btn ${alarmEnabled ? "disabled" : ""}`}>
           {alarmEnabled ? "Alarm Active" : "Enable Alarm Sound"}
         </button>
       </div>
+      {!alarmEnabled && (
+        <p style={{ marginTop: "8px" }}>
+          * Please enable alarm sound before adding reminders
+        </p>
+      )}
+      {alarmStatusMessage && <div style={{ color: "green", marginTop: "8px", marginBottom: "10px" }}>{alarmStatusMessage}</div>}
+
 
       {currReminder && (
         <div className="popupOverlayStyle">
