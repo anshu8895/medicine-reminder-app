@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
+import type { Reminder, SnoozedItem, UseRemindersReturn } from "../types";
 
-export default function useReminders() {
+export default function useReminders(): UseRemindersReturn {
     const today = new Date().toISOString().slice(0, 10);
 
     // 1. Load saved Reminders
-    const [reminders, setReminders] = useState(() => {
+    const [reminders, setReminders] = useState<Reminder[]>(() => {
         const saved = localStorage.getItem('med_reminders');
         return saved ? JSON.parse(saved) : [];
     });
 
     // 2. Load saved Snoozed Item Objects (Contains {id, time})
-    const [snoozedItemIds, setSnoozedItemIds] = useState(() => {
+    const [snoozedItemIds, setSnoozedItemIds] = useState<SnoozedItem[]>(() => {
         const saved = localStorage.getItem('snoozed_item_ids');
         return saved ? JSON.parse(saved) : [];
     });
@@ -39,33 +40,33 @@ export default function useReminders() {
         localStorage.setItem('snoozed_item_ids', JSON.stringify(snoozedItemIds));
     }, [snoozedItemIds]);
 
-    function addReminder(reminder) {
+    function addReminder(reminder: Omit<Reminder, 'id' | 'taken' | 'date'>): void {
         setReminders(prev => [
             ...prev,
             { id: Date.now(), taken: false, date: today, ...reminder }
         ]);
     }
 
-    function markAsTaken(id) {
+    function markAsTaken(id: number): void {
         setReminders(prev =>
             prev.map(r => (r.id === id ? { ...r, taken: true } : r))
         );
         clearSnooze(id);
     }
 
-    function editReminder(id, update) {
+    function editReminder(id: number, update: Partial<Omit<Reminder, 'id'>>): void {
         setReminders(prev =>
             prev.map(r => (r.id === id ? { ...r, ...update } : r))
         );
         clearSnooze(id);
     }
 
-    function deleteReminder(id) {
+    function deleteReminder(id: number): void {
         setReminders(prev => prev.filter(r => r.id !== id));
         clearSnooze(id);
     }
 
-    function snoozeReminder(id, minutes) {
+    function snoozeReminder(id: number, minutes: number): void {
         const now = new Date();
         now.setMinutes(now.getMinutes() + minutes);
         const snoozeTime = now.toTimeString().slice(0, 5);
@@ -73,11 +74,11 @@ export default function useReminders() {
         setSnoozedItemIds(prev => {
             const otherSnoozes = Array.isArray(prev) ? prev.filter(item => item.id !== id) : [];
             const reminder = reminders.find(r => r.id === id);
-            return [...otherSnoozes, { id, time: snoozeTime, medicineName: reminder.medicineName }];
+            return [...otherSnoozes, { id, time: snoozeTime, medicineName: reminder?.medicineName || '' }];
         });
     }
 
-    function clearSnooze(id) {
+    function clearSnooze(id: number): void {
         setSnoozedItemIds(prev =>
             Array.isArray(prev) ? prev.filter(item => item.id !== id) : []
         );

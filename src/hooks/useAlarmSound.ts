@@ -1,12 +1,13 @@
 import { useRef } from "react";
-import interstellarAudio from "../assets/interstellar.mp3";
+import alarmSound from "../assets/interstellar.mp3";
+import type { UseAlarmSoundReturn } from "../types";
 
-export default function useAlarmSound() {
-    const audioRef = useRef(null);
+export default function useAlarmSound(): UseAlarmSoundReturn {
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    function initiateSound() {
+    function initiateSound(): Promise<void> {
         if (!audioRef.current) {
-            audioRef.current = new Audio(interstellarAudio);
+            audioRef.current = new Audio(alarmSound);
             audioRef.current.loop = true;
             audioRef.current.volume = 1;
         }
@@ -15,17 +16,17 @@ export default function useAlarmSound() {
         return audioRef.current
             .play()
             .then(() => {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
+                audioRef.current!.pause();
+                audioRef.current!.currentTime = 0;
             });
     }
 
-    function play() {
+    function play(): void {
         if (!audioRef.current) return;
         audioRef.current.play().catch(console.warn);
     }
 
-    function stop() {
+    function stop(): void {
         if (!audioRef.current) return;
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
